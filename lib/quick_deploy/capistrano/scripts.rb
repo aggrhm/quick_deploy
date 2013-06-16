@@ -4,6 +4,10 @@ Capistrano::Configuration.instance.load do
 
     namespace :scripts do
 
+      def apt_install(*pkgs)
+        run "apt-get -y install #{pkgs.join(" ")}"
+      end
+
       task :standard_box_setup do
         #qd.scripts.ssh.copy_key
         qd.scripts.utils.update_package_manager
@@ -16,7 +20,7 @@ Capistrano::Configuration.instance.load do
       namespace :git do
 
         task :install do
-          run "apt-get install git-core"
+          apt_install "git-core"
         end
 
       end
@@ -24,7 +28,23 @@ Capistrano::Configuration.instance.load do
       namespace :nginx do
 
         task :install do
-          run "apt-get install nginx"
+          apt_install "nginx"
+        end
+
+        task :configure_unicorn do
+          rap = "/etc/nginx/sites-available/#{application}"
+          rep = "/etc/nginx/sites-enabled/#{application}"
+
+          # build and copy template
+          copy_template_file("nginx/unicorn-site.conf", rap)
+
+          # link in sites-enabled
+          run "ln -sf #{rap} #{rep}"
+          qd.scripts.nginx.restart
+        end
+
+        task :restart do
+          run "service nginx restart"
         end
 
       end
@@ -32,7 +52,7 @@ Capistrano::Configuration.instance.load do
       namespace :ruby do
 
         task :install_rvm do
-          set :rvm_type, :system
+          set :rvm_install_with_sudo, true
           rvm.install_rvm
           rvm.install_ruby
         end
@@ -42,7 +62,7 @@ Capistrano::Configuration.instance.load do
       namespace :imagemagick do
 
         task :install do
-          run "apt-get install imagemagick libmagickcore-dev libmagickwand-dev"
+          apt_install "imagemagick", "libmagickcore-dev", "libmagickwand-dev"
         end
 
       end
@@ -50,6 +70,12 @@ Capistrano::Configuration.instance.load do
       namespace :ssh do
 
         task :copy_key do
+          run_locally "ssh-copy-id #{user}@#{get_host}"
+        end
+
+        task :copy_key_to_root do
+          set :user, 'root'
+          set :default_shell, :bash
           run_locally "ssh-copy-id #{user}@#{get_host}"
         end
 
@@ -80,14 +106,14 @@ Capistrano::Configuration.instance.load do
         end
 
         task :setup_deploy_user do
-          _cset(:deploy_user, "deploy")
           run <<-END
             if [ -z "$(getent passwd #{deploy_user})" ]; then
               echo "User #{deploy_user} doesn't exist. Creating.";
               useradd #{deploy_user} -m -s /bin/bash;
               # copy over keys
-              mkdir ~/.ssh;
-              cp /root/.ssh/authorized_keys ~/.ssh/;
+              mkdir ~#{deploy_user}/.ssh;
+              cp /root/.ssh/authorized_keys ~#{deploy_user}/.ssh/;
+              chown #{deploy_user} ~#{deploy_user}/.ssh/authorized_keys;
             else
               echo "User already exists.";
             fi;

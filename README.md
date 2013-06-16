@@ -58,6 +58,10 @@ To deploy do the following:
 
 		$ cap [staging|production] deploy
 
+4. Later... bring down instance
+
+		$ cap [staging|production] qd:node:destroy
+
 ## Contributing
 
 1. Fork it

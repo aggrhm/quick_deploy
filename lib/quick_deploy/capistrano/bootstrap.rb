@@ -4,13 +4,30 @@ Capistrano::Configuration.instance.load do
 
     namespace :bootstrap do
 
+      task :default do
+        qd.bootstrap.apply
+      end
+
       task :apply do
         set :user, 'root'
         set :default_shell, :bash
 
-        role = get_server_role
-        qd.bootstrap.send("apply_#{role}_manifest")
+        host = get_host
+        prof = QuickDeploy.get_node_profile(host)
+        roles = prof ? prof[:roles] : []
+        puts ">> Bootstrapping #{host}(#{prof[:name]}) for #{roles.join(",")}...".yellow
+        roles.each do |role|
+          task_n = "apply_#{role.to_s}_manifest"
+          if qd.bootstrap.respond_to?(task_n)
+            puts ">> Found manifest for #{role}".green
+            qd.bootstrap.send(task_n)
+          end
+        end
+        set :user, deploy_user
+        puts ">> Setting user back to #{user}.".green
       end
+
+      #after "qd:bootstrap:apply", "deploy:setup"
 
     end
 
