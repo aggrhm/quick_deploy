@@ -8,7 +8,7 @@ Capistrano::Configuration.instance.load do
         run "apt-get -y install #{pkgs.join(" ")}"
       end
 
-      task :standard_box_setup do
+      task :standard_root_box_setup do
         #qd.scripts.ssh.copy_key
         qd.scripts.utils.update_package_manager
         qd.scripts.ssh.disable_passwords
