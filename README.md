@@ -18,44 +18,96 @@ Or install it yourself as:
 
 ## Usage
 
+The directory structure for deployment is as follows:
+
+		config/
+
+			deploy.rb				# standard setup, see below
+
+			deploy/
+				production.rb
+				staging.rb
+				manifests/		# how to build servers for each role
+					app.rb
+					mongo.rb
+					ceph.rb
+					redis.rb
+					monitor.rb
+					nodes.yml		# an inventory of your registered servers
+
+				scripts/			# helper scripts for bootstrapping
+				templates/		# erb templates for configuration files
+
+
+### Deploy Configuration Files
+
+		# config/deploy.rb
+		require "rvm/capistrano"                  # Load RVM's capistrano plugin.
+		require "bundler/capistrano"
+		require "capistrano/ext/multistage"
+		require "quick_deploy/capistrano"
+
+		set :stages, %w{production}
+		set :default_stage, "production"
+		set :rvm_ruby_string, 'ruby-1.9.3-p125'  # Or whatever env you want it to run in.
+
+		set :app_name, 'artisimo'
+		set :repository,  "git@myrick.qstudiosonline.com:#{app_name}.git"
+		set :www_dir, "/home/deploy"		# defaults to this, so really not necessary
+		set :deploy_user, 'deploy'
+
+		# config/deploy/production.rb
+		set :domain, 'fiercecanvas.com'
+		set :deploy_env, 'production'
+		set :branch, 'master'
+				
+
+### Manifests
+
 First you need to specify manifests for how to bootstrap machines:
 
 1. Add manifests for servers
 
 		# config/deploy/manifests/app.rb
-		run_script 'copy_ssh_key'		# will pull key location from options
-		run_script 'disable_password_ssh'
-		run_script 'setup_deploy_user'
-		run_script 'set_timezone_utc'
-		run_script 'install_rvm'
-		run_script 'install_nginx'
-		run_script 'setup_nginx_unicorn'
-		run_script 'prepare_www_dir'
-		run_script 'install_standard_app_packages'
-		run_script 'install_custom_app_packages'	# we will add later
+		namespace :qd do
+			namespace :bootstrap do
+				qd.scripts.standard_root_box_setup		# will login as root and setup users, timezone, ssh, etc.
+				qd.scripts.ruby.install_rvm						# installs ruby and the ruby version you declare with :rvm_ruby_string
+				qd.scripts.extras.add_common_app_packages	# adds common packages for deploying apps (e.g. imagemagick)
+				qd.scripts.nginx.install							# installs the package version of nginx
+				qd.scripts.nginx.configure_unicorn		# prepares nginx to support our application
+			end
+		end
 
 2. Add custom scripts
 
 		# config/deploy/scripts/packages.rb
-		register_script 'install_additional_packages' do
-			apt-get install <mypackage>
+		namespace :qd do
+			namespace :scripts do
+				task :install_additional_packages do
+					apt_install "my-package", "another-package"		# uses apt_install helper to answer yes to prompts
+				end
 		end
+
+
+### Deployment
 
 To deploy do the following:
 
 1. First create a new instance
 
 		$ cap [staging|production] qd:node:create
-			# prompt for tag (e.g. 'app-01')
-			# tag contains role and id
+			# prompt for role (e.g. 'app')
+			# prompt for server name
 
 2. Bootrap the instance
 
 		$ cap [staging|production] qd:bootstrap
-			# prompt for tag
+			# prompt for name	(coming soon)
 
 3. Deploy to instance
 
+		$ cap [staging|production] deploy:setup
 		$ cap [staging|production] deploy
 
 4. Later... bring down instance
