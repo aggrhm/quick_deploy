@@ -1,5 +1,5 @@
 
-APP_ENV = ENV['RAILS_ENV'] || 'production'
+APP_ENV = ENV['RACK_ENV'] || 'production'
 APP_PATH = "<%= www_dir %>/<%= app_name %>-#{APP_ENV}"
 
 worker_processes 3
