@@ -8,6 +8,12 @@ Capistrano::Configuration.instance.load do
         run "apt-get -y install #{pkgs.join(" ")}"
       end
 
+      def replace_in_file(find_exp, rep_exp, file)
+        bn = file.split('/').last
+        run "cp -n #{file} ~/#{bn}.old"
+        run "sed -i 's/#{find_exp}/#{rep_exp}/g' #{file}"
+      end
+
       task :standard_root_box_setup do
         #qd.scripts.ssh.copy_key
         qd.scripts.utils.update_package_manager
@@ -31,12 +37,16 @@ Capistrano::Configuration.instance.load do
           apt_install "nginx"
         end
 
+        task :configure do
+          replace_in_file("# server_names_hash_bucket_size [0-9]\\+", "server_names_hash_bucket_size 64", "/etc/nginx/nginx.conf")
+        end
+
         task :configure_unicorn do
           rap = "/etc/nginx/sites-available/#{application}"
           rep = "/etc/nginx/sites-enabled/#{application}"
 
           # build and copy template
-          copy_template_file("nginx/unicorn-site.conf", rap)
+          copy_template_file("nginx/unicorn-site.conf.erb", rap)
 
           # link in sites-enabled
           run "ln -sf #{rap} #{rep}"
@@ -45,6 +55,15 @@ Capistrano::Configuration.instance.load do
 
         task :restart do
           run "service nginx restart"
+        end
+
+      end
+
+      namespace :unicorn do
+
+        task :setup do
+          dest = "#{app_dir_shared_path}/conf/unicorn.rb"
+          copy_template_file("unicorn/unicorn-local.rb.erb", dest)
         end
 
       end
@@ -80,7 +99,7 @@ Capistrano::Configuration.instance.load do
         end
 
         task :disable_passwords do
-          run "cp /etc/ssh/sshd_config ~/sshd_config.bkp"
+          run "cp /etc/ssh/sshd_config ~/sshd_config.old"
           run "sed -i 's/PasswordAuthentication yes/PasswordAuthentication no/g' /etc/ssh/sshd_config"
         end
 
@@ -130,6 +149,7 @@ Capistrano::Configuration.instance.load do
 
         task :add_common_app_packages do
           qd.scripts.imagemagick.install
+          apt_install "vim"
         end
 
       end

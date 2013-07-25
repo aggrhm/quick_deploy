@@ -23,8 +23,6 @@ Capistrano::Configuration.instance.load do
             qd.bootstrap.send(task_n)
           end
         end
-        set :user, deploy_user
-        puts ">> Setting user back to #{user}.".green
       end
 
       #after "qd:bootstrap:apply", "deploy:setup"

@@ -33,15 +33,15 @@ module QuickDeploy
     case vars[:cloud_provider].to_sym
     when :manual
     when :digital_ocean
-      api = Digitalocean::API.new({
+      api = DigitalOcean::API.new({
         client_id: vars[:digital_ocean_client_id],
         api_key: vars[:digital_ocean_api_key]
       })
       resp = api.droplets.create({
-        :name => droplet_name,
-        :size_id => digital_ocean_size_id,
-        :image_id => digital_ocean_image_id,
-        :region_id => digital_ocean_region_id
+        :name => opts[:name],
+        :size_id => 66,
+        :image_id => 284203,
+        :region_id => 1
       })
 
       return nil unless resp.status == "OK"
@@ -49,6 +49,7 @@ module QuickDeploy
 
       # poll for ip address
       begin
+        puts "\tChecking node...".yellow
         resp = api.droplets.show(did)
         sleep 2
       end until (resp.status == "OK" && !resp.droplet.ip_address.nil?)
@@ -68,6 +69,29 @@ module QuickDeploy
     return opts
   end
 
+  def self.destroy_instance(vars, node_name)
+    puts "Deleting node #{node_name}...".green
+    prof = self.get_node_profile(node_name)
+    return false if prof.nil?
+
+    case prof[:cloud_provider].to_sym
+    when :manual
+    when :digital_ocean
+      api = DigitalOcean::API.new({
+        client_id: vars[:digital_ocean_client_id],
+        api_key: vars[:digital_ocean_api_key]
+      })
+      resp = api.droplets.delete(prof[:id])
+
+      return false unless resp.status == "OK"
+    end
+
+    self.unregister_node(node_name)
+    return true
+    
+
+  end
+
   # store to local database in app (./config/manifests/nodes.yml)
   def self.register_node(opts)
     db = self.load_node_db
@@ -76,8 +100,11 @@ module QuickDeploy
     puts ">> Node saved to registry.".green
   end
 
-  def self.unregister_node(node)
-
+  def self.unregister_node(node_name)
+    db = self.load_node_db
+    db.delete_if {|node| node[:name] == node_name}
+    self.write_node_db(db)
+    puts ">> Node removed from registry.".green
   end
 
   def self.node_db_path
@@ -103,8 +130,8 @@ module QuickDeploy
 
   def self.get_node_profile(id)
     #parse_role(get_node_tag)
-    @db ||= self.load_node_db
-    @db.select{|prof| prof[:name] == id || prof[:ip_address] == id}.first
+    db = self.load_node_db
+    db.select{|prof| prof[:name] == id || prof[:ip_address] == id}.first
   end
 
   def self.get_node_roles(name)

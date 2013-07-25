@@ -20,6 +20,7 @@ Capistrano::Configuration.instance.load do
     set(:application) { "#{app_name}-#{deploy_env}" }
     set(:rails_env) { deploy_env }
     _cset(:app_dir) { "#{www_dir}/#{application}" }
+    set(:app_dir_shared_path) { "#{app_dir}/shared" }
     _cset :deploy_via, 'remote_cache'
     _cset :use_sudo, false
     set(:deploy_to) { app_dir }

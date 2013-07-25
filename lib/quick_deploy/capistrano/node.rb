@@ -19,6 +19,15 @@ Capistrano::Configuration.instance.load do
       end
       after "qd:node:create", "qd:node:setup"
 
+      task :destroy, :roles => :local do
+        node_name = get_env("NODE_NAME", "Enter the name of the node to destroy", true)
+        QuickDeploy.destroy_instance(variables, node_name)
+      end
+
+      task :copy_root_key, :roles => :local do
+        qd.scripts.ssh.copy_key_to_root
+      end
+
       task :setup do
         # TODO : store node information
 

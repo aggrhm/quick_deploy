@@ -7,7 +7,7 @@ Capistrano::Configuration.instance.load do
       namespace :unicorn do
 
         _cset :unicorn_binary, "unicorn"
-        _cset(:unicorn_config) {"#{current_path}/config/unicorn.rb"}
+        _cset(:unicorn_config) {"#{app_dir_shared_path}/conf/unicorn.rb"}
         _cset(:unicorn_pid_file) {"#{current_path}/tmp/pids/unicorn.pid"}
 
         def unicorn_pid
@@ -83,7 +83,11 @@ Capistrano::Configuration.instance.load do
         end
 
         task :setup, :roles => :app do
-          run "mkdir -p #{app_dir}/shared/sockets"
+          # create sockets dir
+          run "mkdir -p #{app_dir_shared_path}/sockets"
+          run "mkdir -p #{app_dir_shared_path}/conf"
+          # add unicorn config
+          qd.scripts.unicorn.setup
         end
 
     end

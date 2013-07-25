@@ -6,7 +6,18 @@ Capistrano::Configuration.instance.load do
       QuickDeploy.initialize(root: Dir.pwd)
       set :nodes, QuickDeploy.load_node_db
       puts ">> #{nodes.length} nodes found.".green
-      nodes.each {|node| server(node[:ip_address], *node[:roles].collect{|role| role.to_sym}) }
+
+      # handle filter
+      if ENV["NODES"]
+        selected_nodes = ENV["NODES"].split(',')
+        nodes.select! {|node| selected_nodes.include? node[:name]}
+        puts ">> Filtered to #{nodes.length} nodes.".yellow
+      end
+
+      nodes.each do |node|
+        puts "\tRegistering #{node[:ip_address]}(#{node[:name]}) as #{node[:roles].join(",")}.".green
+        server node[:ip_address], *node[:roles].collect{|role| role.to_sym}
+      end
       
 
       def get_node_conf
@@ -26,14 +37,18 @@ Capistrano::Configuration.instance.load do
         binding
       end
 
-      def copy_template_file(name, remote_path)
+      def copy_template_file(name, remote_path, dest=:remote)
         # TODO: first look in local dir for template
         # next look in gem templates for file
         tf = File.join(QuickDeploy::TEMPLATES_DIR, name)
         if File.exists?(tf)
           puts ">> Copying template #{tf} to #{remote_path}.".green
           res = ERB.new(File.read(tf)).result(get_binding)
-          put(res, remote_path)
+          if dest == :remote
+            put(res, remote_path)
+          else
+            File.open(remote_path, 'w') {|f| f.write(res)}
+          end
         else
           puts ">> Couldn't not find template #{tf}".red
         end

@@ -6,15 +6,15 @@ TODO: Write a gem description
 
 Add this line to your application's Gemfile:
 
-    gem 'quick_deploy'
+		gem 'quick_deploy'
 
 And then execute:
 
-    $ bundle
+		$ bundle
 
 Or install it yourself as:
 
-    $ gem install quick_deploy
+		$ gem install quick_deploy
 
 ## Usage
 
@@ -42,7 +42,7 @@ The directory structure for deployment is as follows:
 ### Deploy Configuration Files
 
 		# config/deploy.rb
-		require "rvm/capistrano"                  # Load RVM's capistrano plugin.
+		require "rvm/capistrano"									# Load RVM's capistrano plugin.
 		require "bundler/capistrano"
 		require "capistrano/ext/multistage"
 		require "quick_deploy/capistrano"
@@ -51,10 +51,14 @@ The directory structure for deployment is as follows:
 		set :default_stage, "production"
 		set :rvm_ruby_string, 'ruby-1.9.3-p125'  # Or whatever env you want it to run in.
 
-		set :app_name, 'artisimo'
-		set :repository,  "git@myrick.qstudiosonline.com:#{app_name}.git"
+		set :app_name, 'my-repo-name'
+		set :repository,	"git@my-git-host.com:my-repository-name.git"
 		set :www_dir, "/home/deploy"		# defaults to this, so really not necessary
 		set :deploy_user, 'deploy'
+
+		set :cloud_provider, 'digital_ocean'		# Or manual
+		set :digital_ocean_client_id, 'client-id'
+		set :digital_ocean_api_key, 'api-key'
 
 		# config/deploy/production.rb
 		set :domain, 'fiercecanvas.com'
