@@ -37,6 +37,11 @@ Capistrano::Configuration.instance.load do
     default_run_options[:shell] = false
     ssh_options[:forward_agent] = true
     set :rvm_type, :system
+
+  end
+
+  after 'multistage:ensure' do
+    qd.load_nodes
   end
 
   # Helper methods

@@ -11,7 +11,7 @@ upstream <%= application %> {
     client_max_body_size 50M;
 
     # sets the domain[s] that this vhost server requests for
-    server_name <%= domain %> www.<%= domain %>;
+    server_name <%= domain %>;
 
     # doc root
     root <%= app_dir %>/current/public;

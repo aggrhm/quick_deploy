@@ -2,21 +2,24 @@ Capistrano::Configuration.instance.load do
 
   namespace :qd do
 
-      puts ">> Loading node list".yellow
       QuickDeploy.initialize(root: Dir.pwd)
-      set :nodes, QuickDeploy.load_node_db
-      puts ">> #{nodes.length} nodes found.".green
 
-      # handle filter
-      if ENV["NODES"]
-        selected_nodes = ENV["NODES"].split(',')
-        nodes.select! {|node| selected_nodes.include? node[:name]}
-        puts ">> Filtered to #{nodes.length} nodes.".yellow
-      end
+      task :load_nodes do
+        puts "\t>> Loading node list".yellow
+        set :nodes, QuickDeploy.load_node_db.select{|n| n[:deploy_env].to_s == stage.to_s}
+        puts "\t>> #{nodes.length} nodes found.".green
 
-      nodes.each do |node|
-        puts "\tRegistering #{node[:ip_address]}(#{node[:name]}) as #{node[:roles].join(",")}.".green
-        server node[:ip_address], *node[:roles].collect{|role| role.to_sym}
+        # handle filter
+        if ENV["NODES"]
+          selected_nodes = ENV["NODES"].split(',')
+          nodes.select! {|node| selected_nodes.include? node[:name]}
+          puts "\t>> Filtered to #{nodes.length} nodes.".yellow
+        end
+
+        nodes.each do |node|
+          puts "\t - Registering #{node[:ip_address]}(#{node[:name]}) as #{node[:roles].join(",")}.".green
+          server node[:ip_address], *node[:roles].collect{|role| role.to_sym}
+        end
       end
       
 
