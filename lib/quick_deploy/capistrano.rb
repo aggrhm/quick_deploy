@@ -36,7 +36,7 @@ Capistrano::Configuration.instance.load do
     default_run_options[:pty] = true
     default_run_options[:shell] = false
     ssh_options[:forward_agent] = true
-    set :rvm_type, :system
+    set :rvm_type, :user
 
   end
 
@@ -49,6 +49,31 @@ Capistrano::Configuration.instance.load do
     unless exists?(name)
       set(name, *args, &block)
     end
+  end
+  # run a command on the server with a different user
+  def ensure_user(new_user, &block)
+    old_user = user
+    change_user(new_user)
+    begin
+      yield
+    rescue Exception => e
+      change_user(old_user)
+      raise e
+    end
+    change_user(old_user)
+  end
+ 
+  # change the capistrano user
+  def change_user(user)
+    puts "=== CHANGING USER TO: #{user}".green
+    set :user, user
+    close_sessions
+  end
+   
+  # disconnect all sessions
+  def close_sessions
+    sessions.values.each { |session| session.close }
+    sessions.clear
   end
 
   Dir[File.join(File.dirname(__FILE__), 'capistrano/*.rb')].each do |qd_lib|

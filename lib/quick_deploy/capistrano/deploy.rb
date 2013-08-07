@@ -16,6 +16,21 @@ Capistrano::Configuration.instance.load do
     end
   end
 
+  namespace :qd do
+    namespace :deploy do
+      task :setup, :roles => :app do
 
+        # setup based on server
+        case app_server
+        when :unicorn
+          qd.unicorn.setup
+        end
+
+      end
+
+    end
+  end
+
+  after "deploy:setup", "qd:deploy:setup"
 
 end

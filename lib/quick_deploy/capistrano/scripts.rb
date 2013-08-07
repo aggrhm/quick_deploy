@@ -71,9 +71,20 @@ Capistrano::Configuration.instance.load do
       namespace :ruby do
 
         task :install_rvm do
-          set :rvm_install_with_sudo, true
-          rvm.install_rvm
-          rvm.install_ruby
+
+          qd.scripts.ruby.install_ruby_dependencies
+
+          ensure_user(deploy_user) do
+            set(:rvm_install_with_sudo, true) if rvm_type == :system
+            set :rvm_autolibs_flag, :read
+            rvm.install_rvm
+            rvm.install_ruby
+          end
+
+        end
+
+        task :install_ruby_dependencies do
+          apt_install "gawk", "libreadline6-dev", "libssl-dev", "libyaml-dev", "libsqlite3-dev", "sqlite3", "autoconf", "libgdbm-dev", "libncurses5-dev", "automake", "bison", "libffi-dev", "libxslt-dev", "libxml2-dev"
         end
 
       end

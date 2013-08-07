@@ -1,7 +1,5 @@
 Capistrano::Configuration.instance.load do
 
-  after "deploy:setup", "qd:unicorn:setup"
-
   namespace :qd do
 
       namespace :unicorn do
