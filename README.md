@@ -75,11 +75,13 @@ First you need to specify manifests for how to bootstrap machines:
 		# config/deploy/manifests/app.rb
 		namespace :qd do
 			namespace :bootstrap do
-				qd.scripts.standard_root_box_setup		# will login as root and setup users, timezone, ssh, etc.
-				qd.scripts.ruby.install_rvm						# installs ruby and the ruby version you declare with :rvm_ruby_string
-				qd.scripts.extras.add_common_app_packages	# adds common packages for deploying apps (e.g. imagemagick)
-				qd.scripts.nginx.install							# installs the package version of nginx
-				qd.scripts.nginx.configure_unicorn		# prepares nginx to support our application
+				task :apply_app_manifest do
+					qd.scripts.standard_root_box_setup		# will login as root and setup users, timezone, ssh, etc.
+					qd.scripts.ruby.install_rvm						# installs ruby and the ruby version you declare with :rvm_ruby_string
+					qd.scripts.extras.add_common_app_packages	# adds common packages for deploying apps (e.g. imagemagick)
+					qd.scripts.nginx.install							# installs the package version of nginx
+					qd.scripts.nginx.configure_unicorn		# prepares nginx to support our application
+				end
 			end
 		end
 
@@ -104,17 +106,21 @@ To deploy do the following:
 			# prompt for role (e.g. 'app')
 			# prompt for server name
 
-2. Bootrap the instance
+2. Copy ssh key to root (for easy bootstrapping)
+
+		$ cap [staging|production] qd:scripts:ssh:copy_key_to_root
+
+3. Bootrap the instance
 
 		$ cap [staging|production] qd:bootstrap
 			# prompt for name	(coming soon)
 
-3. Deploy to instance
+4. Deploy to instance
 
 		$ cap [staging|production] deploy:setup
 		$ cap [staging|production] deploy
 
-4. Later... bring down instance
+5. Later... bring down instance
 
 		$ cap [staging|production] qd:node:destroy
 
