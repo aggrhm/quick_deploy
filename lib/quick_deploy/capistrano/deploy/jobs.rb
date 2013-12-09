@@ -5,7 +5,9 @@ Capistrano::Configuration.instance.load do
 
       desc "Restart job processes"
       task :restart, :roles => :app, :except => {:no_release => true} do
-        run "cd #{current_path} && bundle exec script/job_processor -e #{deploy_env} restart"
+        job_scripts.each do |script|
+          run "cd #{current_path} && bundle exec script/#{script} -e #{deploy_env} restart"
+        end
       end
 
     end
