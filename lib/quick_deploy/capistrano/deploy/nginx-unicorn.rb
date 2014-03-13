@@ -85,7 +85,9 @@ Capistrano::Configuration.instance.load do
           run "mkdir -p #{app_dir_shared_path}/sockets"
           run "mkdir -p #{app_dir_shared_path}/conf"
           # add unicorn config
-          qd.scripts.nginx.configure_unicorn
+          ensure_user('root') do
+            qd.scripts.nginx.configure_unicorn
+          end
           qd.scripts.unicorn.setup
         end
 

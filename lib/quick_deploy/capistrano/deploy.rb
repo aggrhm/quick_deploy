@@ -19,6 +19,7 @@ Capistrano::Configuration.instance.load do
   namespace :qd do
     namespace :deploy do
       task :setup, :roles => :app do
+        set :default_shell, :bash
 
         # setup based on server
         case app_server
