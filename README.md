@@ -100,6 +100,10 @@ First you need to specify manifests for how to bootstrap machines:
 
 To deploy do the following:
 
+1. If you haven't already, capify your repository
+
+		$ bundle exec capify .
+
 1. First create a new instance
 
 		$ cap [staging|production] qd:node:create
