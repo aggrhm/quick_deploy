@@ -10,6 +10,13 @@ Capistrano::Configuration.instance.load do
         end
       end
 
+      desc "Stop job processes"
+      task :stop, :roles => :app, :except => {:no_release => true} do
+        job_scripts.each do |script|
+          run "cd #{current_path} && bundle exec script/#{script} -e #{deploy_env} stop"
+        end
+      end
+
     end
   end
 
