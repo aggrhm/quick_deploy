@@ -6,7 +6,11 @@ Capistrano::Configuration.instance.load do
 
       task :load_nodes do
         puts "\t>> Loading node list".yellow
-        set :nodes, QuickDeploy.load_node_db.select{|n| n[:deploy_env].to_s == stage.to_s}
+        if cloud_provider == "boxchief"
+          set :nodes, QuickDeploy.load_node_db_from_boxchief(variables)
+        else
+          set :nodes, QuickDeploy.load_node_db
+        end
         puts "\t>> #{nodes.length} nodes found.".green
 
         # handle filter

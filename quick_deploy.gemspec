@@ -24,4 +24,5 @@ Gem::Specification.new do |spec|
   spec.add_dependency "rvm-capistrano"
   spec.add_dependency "colored"
   spec.add_dependency "digital_ocean"
+  spec.add_dependency "faraday"
 end

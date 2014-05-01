@@ -1,6 +1,8 @@
 require "quick_deploy/version"
 require "digital_ocean"
 require "yaml"
+require "faraday"
+require "json"
 
 module QuickDeploy
 
@@ -137,6 +139,32 @@ module QuickDeploy
   def self.get_node_roles(name)
     prof = self.get_node_profile(name)
     prof ? prof[:roles] : []
+  end
+
+  ## BOXCHIEF
+
+  def self.load_node_db_from_boxchief(opts)
+    conn = Faraday.new(url: "http://boxchief.com") do |f|
+      #f.response :logger
+      f.adapter Faraday.default_adapter
+    end
+    ret = conn.get "/api/servers/list", {app_token: opts[:boxchief_app_token]}
+    #puts ret.inspect
+    #puts "BODY = #{ret.body}"
+    resp = JSON.parse(ret.body)
+    if resp["success"] == false
+      raise "Boxchief Error: #{resp["error"]}"
+    end
+
+    servers = resp["data"].collect do |sd|
+      server = {}
+      server[:name] = sd["hostname"]
+      server[:ip_address] = sd["ip"]
+      server[:roles] = sd["roles"]
+      server[:cloud_provider] = "boxchief"
+      server
+    end
+    return servers
   end
 
 end
