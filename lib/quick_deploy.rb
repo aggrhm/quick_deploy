@@ -66,7 +66,7 @@ module QuickDeploy
     opts[:app_name] = vars[:app_name]
     opts[:deploy_env] = vars[:deploy_env]
     opts[:cloud_provider] = vars[:cloud_provider]
-    self.register_node(opts)
+    self.register_node(vars[:deploy_env], opts)
 
     return opts
   end
@@ -88,67 +88,67 @@ module QuickDeploy
       return false unless resp.status == "OK"
     end
 
-    self.unregister_node(node_name)
+    self.unregister_node(vars[:deploy_env], node_name)
     return true
     
 
   end
 
   # store to local database in app (./config/manifests/nodes.yml)
-  def self.register_node(opts)
-    db = self.load_node_db
+  def self.register_node(env, opts)
+    db = self.load_node_db(env)
     db << opts
-    self.write_node_db(db)
+    self.write_node_db(env, db)
     puts ">> Node saved to registry.".green
   end
 
-  def self.unregister_node(node_name)
-    db = self.load_node_db
+  def self.unregister_node(env, node_name)
+    db = self.load_node_db(env)
     db.delete_if {|node| node[:name] == node_name}
-    self.write_node_db(db)
+    self.write_node_db(env, db)
     puts ">> Node removed from registry.".green
   end
 
-  def self.node_db_path
-    db_path = File.join(self.root, "config/deploy/manifests/nodes.yml")
+  def self.node_db_path(env)
+    db_path = File.join(self.root, "config/deploy/manifests/#{env}.yml")
   end
 
-  def self.load_node_db
-    db_path = self.node_db_path
+  def self.load_node_db(env)
+    db_path = self.node_db_path(env)
     if File.exists?(db_path)
       db = YAML::load_file(db_path)
     else
       db = []
-      self.write_node_db(db)
+      self.write_node_db(env, db)
     end
     return db
   end
 
-  def self.write_node_db(db)
-    File.open(self.node_db_path, "w") do |f|
+  def self.write_node_db(env, db)
+    File.open(self.node_db_path(env), "w") do |f|
       f.write(db.to_yaml)
     end
   end
 
-  def self.get_node_profile(id)
+  def self.get_node_profile(env, id)
     #parse_role(get_node_tag)
-    db = self.load_node_db
+    db = self.load_node_db(env)
     db.select{|prof| prof[:name] == id || prof[:ip_address] == id}.first
   end
 
-  def self.get_node_roles(name)
-    prof = self.get_node_profile(name)
+  def self.get_node_roles(env, name)
+    prof = self.get_node_profile(env, name)
     prof ? prof[:roles] : []
   end
 
   ## BOXCHIEF
 
-  def self.load_node_db_from_boxchief(opts)
+  def self.load_node_db_from_boxchief(env, app_token)
     conn = Faraday.new(url: "http://boxchief.com") do |f|
       #f.response :logger
       f.adapter Faraday.default_adapter
     end
-    ret = conn.get "/api/servers/list", {app_token: opts[:boxchief_app_token]}
+    ret = conn.get "/api/servers/list", {app_token: app_token}
     #puts ret.inspect
     #puts "BODY = #{ret.body}"
     resp = JSON.parse(ret.body)
@@ -164,6 +164,9 @@ module QuickDeploy
       server[:cloud_provider] = "boxchief"
       server
     end
+    # cache servers
+    self.write_node_db(env, servers)
+
     return servers
   end
 
