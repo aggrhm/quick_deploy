@@ -40,6 +40,10 @@ Capistrano::Configuration.instance.load do
         capture("echo $CAPISTRANO:HOST$").strip
       end
 
+      def get_host_profile(host_id)
+        nodes.select{|prof| prof[:name] == host_id || prof[:ip_address] == host_id}.first
+      end
+
       def get_binding
         binding
       end
