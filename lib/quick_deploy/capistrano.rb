@@ -52,6 +52,7 @@ Capistrano::Configuration.instance.load do
   end
   # run a command on the server with a different user
   def ensure_user(new_user, &block)
+    return if new_user == user
     old_user = user
     change_user(new_user)
     begin
